@@ -2,9 +2,9 @@
 
 # tdl-filegram
 
-### Paste a `t.me` link — videos, images, and files land on your disk. A ready-to-use Telegram media downloader.
+### A Web visual management UI for [tdl](https://github.com/iyear/tdl) — paste a `t.me` link and videos, images, and files land on your disk.
 
-Backend in Go (Gin + gotd/td), frontend in Vue 3 + Ant Design Vue. The frontend is embedded into a single binary via `go:embed` — **zero external dependencies to deploy**.
+Built on top of the tdl core download engine, with a Web UI crafted in Vue 3 + Ant Design Vue. No more command line — QR login, paste a link, real-time progress, and in-browser preview, all done in your browser. The frontend is embedded into a single binary via `go:embed` — **zero external dependencies to deploy**.
 
 [![Stars](https://img.shields.io/github/stars/weilaifeng/tdl-filegram?style=flat-square&logo=github&color=yellow)](https://github.com/weilaifeng/tdl-filegram/stargazers)
 [![Forks](https://img.shields.io/github/forks/weilaifeng/tdl-filegram?style=flat-square&logo=github&color=blue)](https://github.com/weilaifeng/tdl-filegram/network/members)
@@ -14,13 +14,29 @@ Backend in Go (Gin + gotd/td), frontend in Vue 3 + Ant Design Vue. The frontend 
 [![Vue](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vue.js&logoColor=white)](https://vuejs.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](./Dockerfile)
 
-[📥 Quick Start](#-quick-start) · [🎬 Usage](#-usage) · [🌐 Tech Stack](#-tech-stack) · [📊 API](#-api) · [❓ FAQ](#-faq) · [🗺️ Roadmap](#-roadmap)
+[💡 Highlights](#-highlights) · [📥 Quick Start](#-quick-start) · [🎬 Usage](#-usage) · [🌐 Tech Stack](#-tech-stack) · [📊 API](#-api) · [❓ FAQ](#-faq) · [🗺️ Roadmap](#-roadmap)
 
 [中文](./README.md) · 🌐 **English**
 
 </div>
 
 ---
+
+## 💡 Highlights
+
+The biggest highlight of this project: **a ready-to-use Web visual management UI for [tdl](https://github.com/iyear/tdl), the powerful Telegram command-line downloader.**
+
+tdl is an excellent CLI tool, but it comes with many command-line flags, terminal-based login interaction, and no persistent view of task history or real-time progress. tdl-filegram wraps a Web UI around tdl without touching its core capabilities:
+
+| Aspect | tdl (CLI) | tdl-filegram (this project) |
+| --- | --- | --- |
+| Interaction | CLI flags + config files | Browser GUI, point and click |
+| Login | Terminal phone number / code input | Phone QR login, with 2FA support |
+| Task progress | Terminal text output, gone when closed | Real-time progress bar + task list, history kept |
+| File preview | Needs a local player | In-browser playback / viewing |
+| Deployment | Single binary | Single binary (frontend go:embed) / Docker |
+
+Under the hood it reuses tdl's core modules (`core/downloader` multi-threaded engine, `core/tmedia` media parsing, `core/tclient` client wrapper, `core/storage` session storage, `core/dcpool` connection pool), and layers an HTTP API plus a Web frontend on top — presenting tdl's download power in a more intuitive, user-friendly way. **CLI capabilities, GUI experience.**
 
 ## ✨ Features
 
@@ -41,6 +57,7 @@ Backend in Go (Gin + gotd/td), frontend in Vue 3 + Ant Design Vue. The frontend 
 | **Want in-browser preview** | Play downloaded videos / view images right in the browser — no local player needed |
 | **NAS / home server owner** | Single-container Docker deploy, mount the download dir, run it long-term as a Telegram offline downloader |
 | **Don't want a pile of dependencies** | Frontend `go:embed`-ed into the binary, pure-Go SQLite driver (no CGO), one file does it all |
+| **Find the tdl CLI tedious** | Want tdl's download power without memorizing CLI flags — Web UI with QR login, paste a link, and download |
 
 ## ⚡ Quick Start
 

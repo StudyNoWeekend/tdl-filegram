@@ -2,9 +2,9 @@
 
 # tdl-filegram
 
-### 粘贴一个 `t.me` 链接，视频 / 图片 / 文件自动落到本地 —— 开箱即用的 Telegram 媒体下载器。
+### 给 [tdl](https://github.com/iyear/tdl) 装上 Web 可视化管理 —— 粘贴 `t.me` 链接，视频 / 图片 / 文件自动落到本地。
 
-后端 Go（Gin + gotd/td），前端 Vue 3 + Ant Design Vue，前端产物通过 `go:embed` 打包进单个二进制文件，**零外部依赖部署**。
+基于 tdl 核心下载引擎，用 Vue 3 + Ant Design Vue 打造的 Web 可视化管理界面。告别命令行，扫码登录、粘贴链接、实时进度、在线预览，全部在浏览器里完成。前端产物通过 `go:embed` 打包进单个二进制文件，**零外部依赖部署**。
 
 [![Stars](https://img.shields.io/github/stars/weilaifeng/tdl-filegram?style=flat-square&logo=github&color=yellow)](https://github.com/weilaifeng/tdl-filegram/stargazers)
 [![Forks](https://img.shields.io/github/forks/weilaifeng/tdl-filegram?style=flat-square&logo=github&color=blue)](https://github.com/weilaifeng/tdl-filegram/network/members)
@@ -14,13 +14,29 @@
 [![Vue](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vue.js&logoColor=white)](https://vuejs.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](./Dockerfile)
 
-[📥 快速开始](#-快速开始) · [🎬 使用流程](#-使用流程) · [🌐 技术栈](#-技术栈) · [📊 API 接口](#-api-接口) · [❓ FAQ](#-faq) · [🗺️ Roadmap](#-roadmap)
+[💡 项目亮点](#-项目亮点) · [📥 快速开始](#-快速开始) · [🎬 使用流程](#-使用流程) · [🌐 技术栈](#-技术栈) · [📊 API 接口](#-api-接口) · [❓ FAQ](#-faq) · [🗺️ Roadmap](#-roadmap)
 
 🌐 **中文** · [English](./README.en.md)
 
 </div>
 
 ---
+
+## 💡 项目亮点
+
+本项目最大的亮点是：**为 [tdl](https://github.com/iyear/tdl) 这个强大的 Telegram 命令行下载工具，提供了一套开箱即用的 Web 可视化管理界面**。
+
+tdl 本身是个出色的 CLI 工具，但命令行参数多、登录交互在终端里完成、看不到任务历史和实时进度。tdl-filegram 在不改动 tdl 核心能力的前提下，给它套上了一层 Web UI：
+
+| 对比 | tdl（命令行） | tdl-filegram（本项目） |
+| --- | --- | --- |
+| 交互方式 | 命令行参数 + 配置文件 | 浏览器图形界面，鼠标点点点 |
+| 登录方式 | 终端输入手机号 / 验证码 | 手机扫码登录，支持 2FA |
+| 任务进度 | 终端文本输出，关掉就没了 | 实时进度条 + 任务列表，历史可查 |
+| 文件预览 | 需要本地播放器 | 浏览器在线播放 / 查看 |
+| 部署形态 | 单个二进制 | 单个二进制（前端 go:embed）/ Docker |
+
+底层复用 tdl 的核心模块（`core/downloader` 多线程下载引擎、`core/tmedia` 媒体解析、`core/tclient` 客户端封装、`core/storage` 会话存储、`core/dcpool` 连接池），在其之上封装出 HTTP API 与 Web 前端，把 tdl 的下载能力以更直观、更易用的方式呈现出来 —— **命令行的能力，图形界面的体验**。
 
 ## ✨ 功能特性
 
@@ -41,6 +57,7 @@
 | **想要在线预览的人** | 下载完的视频 / 图片直接浏览器打开播放，不用再装本地播放器 |
 | **NAS / 家庭服务器玩家** | Docker 单容器部署，挂载下载目录，长期跑着当 Telegram 离线下载器 |
 | **不想装一堆依赖的人** | 前端 `go:embed` 进二进制，纯 Go SQLite 驱动免 CGO，一个文件搞定 |
+| **觉得 tdl 命令行麻烦的人** | 想用 tdl 的下载能力但不想记命令行参数，Web 界面扫码登录、粘贴链接就能下载 |
 
 ## ⚡ 快速开始
 
