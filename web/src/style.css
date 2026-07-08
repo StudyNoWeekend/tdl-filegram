@@ -1,0 +1,43 @@
+body {
+  margin: 0;
+  background: #f0f2f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+}
+.header h1 {
+  margin: 0;
+  font-size: 20px;
+}
+.login-wrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 60px;
+}
+.qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+}
+.qr-box canvas {
+  border-radius: 8px;
+}
+.footer-tip {
+  color: #999;
+  font-size: 12px;
+  margin-top: 8px;
+  text-align: center;
+}
+.mt-16 {
+  margin-top: 16px;
+}

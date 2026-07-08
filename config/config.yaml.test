@@ -1,0 +1,27 @@
+# tdl-filegram 配置文件
+app:
+  name: tdl-filegram
+  port: "8743"
+  env: debug  # debug / release
+
+log:
+  level: info  # info / debug
+  dir: logs
+
+database:
+  path: data/tdl-filegram.db  # SQLite 数据库文件路径
+
+download:
+  dir: downloads
+  threads: 4   # 单文件下载线程数
+  limit: 2     # 最大并发任务数
+
+telegram:
+  # 使用 Telegram Desktop 官方凭证，兼容性最好
+  app_id: 0
+  app_hash: ""
+  data_dir: .tdl        # BoltDB session 存储目录
+  namespace: default    # session 命名空间
+  pool_size: 8          # DC 连接池大小
+  reconnect_timeout: 5m # 重连退避超时
+  proxy: "http://127.0.0.1:7890"             # 代理地址，支持 http:// https:// socks5://，如 http://127.0.0.1:7890

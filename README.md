@@ -1,0 +1,378 @@
+<div align="center">
+
+# tdl-filegram
+
+### 粘贴一个 `t.me` 链接，视频 / 图片 / 文件自动落到本地 —— 开箱即用的 Telegram 媒体下载器。
+
+后端 Go（Gin + gotd/td），前端 Vue 3 + Ant Design Vue，前端产物通过 `go:embed` 打包进单个二进制文件，**零外部依赖部署**。
+
+[![Stars](https://img.shields.io/github/stars/weilaifeng/tdl-filegram?style=flat-square&logo=github&color=yellow)](https://github.com/weilaifeng/tdl-filegram/stargazers)
+[![Forks](https://img.shields.io/github/forks/weilaifeng/tdl-filegram?style=flat-square&logo=github&color=blue)](https://github.com/weilaifeng/tdl-filegram/network/members)
+[![Issues](https://img.shields.io/github/issues/weilaifeng/tdl-filegram?style=flat-square&logo=github)](https://github.com/weilaifeng/tdl-filegram/issues)
+[![License](https://img.shields.io/github/license/weilaifeng/tdl-filegram?style=flat-square&color=green)](./LICENSE)
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
+[![Vue](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vue.js&logoColor=white)](https://vuejs.org)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](./Dockerfile)
+
+[📥 快速开始](#-快速开始) · [🎬 使用流程](#-使用流程) · [🌐 技术栈](#-技术栈) · [📊 API 接口](#-api-接口) · [❓ FAQ](#-faq) · [🗺️ Roadmap](#-roadmap)
+
+🌐 **中文** · [English](./README.en.md)
+
+</div>
+
+---
+
+## ✨ 功能特性
+
+- **二维码登录** — 手机扫码即可，支持两步验证（2FA），session 持久化在 BoltDB，重启免重登
+- **多线程下载** — 复用 [tdl](https://github.com/iyear/tdl) 下载引擎，可配置线程数与并发任务数
+- **任务管理** — 创建 / 查询 / 列表 / 进度跟踪，支持分页，实时显示下载进度
+- **在线预览** — 下载完成的文件可通过浏览器直接预览（视频在线播放、图片查看）
+- **代理支持** — http / https / socks5 代理，应对网络受限环境
+- **单文件部署** — 前端嵌入二进制，只需一个可执行文件 + SQLite，免 CGO
+- **Docker 部署** — 多阶段构建，环境变量配置，`docker compose up` 开箱即用
+
+## 🎯 谁会想用
+
+| 你是 | 你能用它做什么 |
+| --- | --- |
+| **Telegram 频道 / 群组归档者** | 粘贴消息链接，批量下载频道里的视频、图片、文件，本地留存 |
+| **受限网络环境用户** | 内置 http / socks5 代理支持，在网络受限的环境下照样连 Telegram |
+| **想要在线预览的人** | 下载完的视频 / 图片直接浏览器打开播放，不用再装本地播放器 |
+| **NAS / 家庭服务器玩家** | Docker 单容器部署，挂载下载目录，长期跑着当 Telegram 离线下载器 |
+| **不想装一堆依赖的人** | 前端 `go:embed` 进二进制，纯 Go SQLite 驱动免 CGO，一个文件搞定 |
+
+## ⚡ 快速开始
+
+### 方式一：Docker Run（推荐）
+
+```bash
+# 构建镜像
+docker build -t tdl-filegram .
+
+# 启动容器
+docker run -d --name tdl-filegram \
+  --restart unless-stopped \
+  -p 8744:8744 \
+  -p 8743:8743 \
+  -v ./data:/data \
+  -v ./downloads:/downloads \
+  -e DB_PATH=/data/tdl-filegram.db \
+  -e DOWNLOAD_DIR=/downloads \
+  -e DOWNLOAD_THREADS=4 \
+  -e DOWNLOAD_LIMIT=2 \
+  -e TG_APP_ID=你的appid \
+  -e TG_APP_HASH=你的apphash \
+  -e TG_DATA_DIR=/data/.tdl \
+  -e TG_NAMESPACE=default \
+  -e TG_POOL_SIZE=8 \
+  -e TG_RECONNECT_TIMEOUT=5m \
+  -e TG_PROXY=http://192.168.1.100:7890 \
+  tdl-filegram
+```
+
+### 方式二：本地开发部署
+
+**前置要求：** Go 1.25+、Node.js 18+
+
+```bash
+# 构建前端
+cd web && npm install && npm run build && cd ..
+
+# 拉取依赖并运行后端
+go mod tidy && go run cmd/api/main.go
+```
+
+开发模式下可分别启动前端 dev server 和后端：
+
+```bash
+# 终端 1：后端（监听 :8743）
+go mod tidy && go run cmd/api/main.go
+
+# 终端 2：前端 dev server（监听 :5173，自动代理 /api → :8743）
+cd web && npm run dev
+# 访问 http://localhost:5173
+```
+
+**端口说明：**
+
+| 端口 | 服务 | 说明 |
+| --- | --- | --- |
+| `8744` | nginx（前端） | 前端页面 + 反向代理 `/api` 到后端 |
+| `8743` | Go 后端 | API 服务，也可直接访问 |
+
+- 浏览器访问前端：`http://localhost:8744`
+- 直接调用 API：`http://localhost:8743`
+
+## 🎬 使用流程
+
+1. 启动服务后浏览器访问 `http://localhost:8744`
+2. 点击「扫码登录」，用 Telegram 手机端扫描二维码
+3. 如开启了两步验证，输入密码
+4. 登录成功后，粘贴 `t.me` 消息链接，点击下载
+5. 任务列表实时显示下载进度，完成后可在线预览或下载文件
+
+## 🌐 技术栈
+
+| 层 | 技术 | 说明 |
+| --- | --- | --- |
+| Web 框架 | [Gin](https://github.com/gin-gonic/gin) | HTTP 路由与中间件 |
+| Telegram MTProto | [gotd/td](https://github.com/gotd/td) + [tdl core](https://github.com/iyear/tdl) | 底层 Telegram 通信 + 下载引擎 |
+| 数据库 | SQLite（[glebarez/sqlite](https://github.com/glebarez/sqlite)） | 纯 Go 驱动，免 CGO |
+| 日志 | [zap](https://github.com/uber-go/zap) + lumberjack | 结构化日志 + 滚动归档 |
+| 前端 | Vue 3 + Ant Design Vue 4 + Vite | 前端嵌入二进制（go:embed） |
+| 会话存储 | BoltDB（[bbolt](https://github.com/etcd-io/bbolt)） | Telegram session 持久化 |
+
+## 🔧 配置
+
+配置优先级：**环境变量 > config.yaml > 代码默认值**。
+
+<details>
+<summary><b>配置文件（config/config.yaml）</b></summary>
+
+```yaml
+app:
+  name: tdl-filegram
+  port: "8743"
+  env: debug              # debug / release
+
+log:
+  level: info             # info / debug
+  dir: logs
+
+database:
+  path: data/tdl-filegram.db # SQLite 数据库文件路径
+
+download:
+  dir: downloads          # 下载内容输出目录
+  threads: 4              # 单文件下载线程数
+  limit: 2                # 最大并发任务数
+
+telegram:
+  app_id:             # Telegram API ID
+  app_hash: ""
+  data_dir: .tdl          # BoltDB session 存储目录
+  namespace: default      # session 命名空间
+  pool_size: 8            # DC 连接池大小
+  reconnect_timeout: 5m   # 重连退避超时
+  proxy: ""               # 代理地址，如 http://127.0.0.1:7890
+```
+
+</details>
+
+<details>
+<summary><b>环境变量（Docker 部署用）</b></summary>
+
+所有配置项均可通过环境变量覆盖，对应关系如下：
+
+| 环境变量 | 配置项 | Docker 默认值 |
+| --- | --- | --- |
+| `APP_PORT` | `app.port` | `8743` |
+| `DB_PATH` | `database.path` | `/data/tdl-filegram.db` |
+| `DOWNLOAD_DIR` | `download.dir` | `/downloads` |
+| `DOWNLOAD_THREADS` | `download.threads` | `4` |
+| `DOWNLOAD_LIMIT` | `download.limit` | `2` |
+| `TG_APP_ID` | `telegram.app_id` | `` |
+| `TG_APP_HASH` | `telegram.app_hash` | `` |
+| `TG_DATA_DIR` | `telegram.data_dir` | `/data/.tdl` |
+| `TG_NAMESPACE` | `telegram.namespace` | `default` |
+| `TG_POOL_SIZE` | `telegram.pool_size` | `8` |
+| `TG_RECONNECT_TIMEOUT` | `telegram.reconnect_timeout` | `5m` |
+| `TG_PROXY` | `telegram.proxy` | 空（不使用代理） |
+
+</details>
+
+<details>
+<summary><b>Docker 卷挂载点</b></summary>
+
+| 容器路径 | 用途 |
+| --- | --- |
+| `/data` | SQLite 数据库 + Telegram session 持久化 |
+| `/downloads` | 下载的媒体文件输出目录 |
+
+</details>
+
+<details>
+<summary><b>Telegram API 凭证怎么获取？</b></summary>
+
+`app_id` / `app_hash` 是 Telegram MTProto API 的应用凭证，获取方式：
+
+1. **自己申请（推荐）** — 登录 [my.telegram.org](https://my.telegram.org) → "API development tools"，填写应用信息后获取专属凭证。
+2. **使用公开凭证** — 项目默认使用 Telegram Desktop 官方凭证（`app_id: 2040`），兼容性好，但高频使用有风控风险，生产环境建议替换为自己的。
+
+</details>
+
+## 📊 API 接口
+
+所有接口返回统一结构：
+
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {},
+  "trace_id": "xxx"
+}
+```
+
+<details>
+<summary><b>登录接口</b></summary>
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/login/status` | 查询登录状态（是否就绪、是否已登录、二维码 URL、2FA 状态） |
+| `POST` | `/api/login/qr/start` | 启动二维码登录流程 |
+| `POST` | `/api/login/qr/2fa` | 提交两步验证密码 |
+
+**登录状态** `login_status` 取值：
+
+| 值 | 含义 |
+| --- | --- |
+| `""`（空） | 空闲，未发起登录 |
+| `pending` | 二维码已生成，等待扫码确认 |
+| `need_2fa` | 需要两步验证密码 |
+| `success` | 登录成功 |
+| `error` | 登录失败 |
+
+</details>
+
+<details>
+<summary><b>下载接口</b></summary>
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/download` | 创建下载任务 |
+
+请求体：
+
+```json
+{
+  "url": "https://t.me/channel/123"
+}
+```
+
+响应：
+
+```json
+{
+  "job_id": "uuid"
+}
+```
+
+</details>
+
+<details>
+<summary><b>任务接口</b></summary>
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/jobs?page=1&page_size=20` | 分页查询任务列表 |
+| `GET` | `/api/jobs/:id` | 查询单个任务详情（含实时下载进度） |
+| `GET` | `/api/jobs/:id/file` | 下载 / 在线预览已完成任务的文件 |
+
+**任务状态** `status` 取值：`pending` / `downloading` / `success` / `failed`
+
+</details>
+
+<details>
+<summary><b>其他</b></summary>
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/health` | 健康检查 |
+
+</details>
+
+## 📁 项目结构
+
+```
+tdl-filegram/
+├── cmd/api/              # 程序入口
+├── bootstrap/            # 启动初始化（配置、日志、数据库）
+├── config/               # 配置文件
+├── enum/                 # 业务错误码与常量
+├── internal/
+│   ├── controller/       # HTTP 控制器
+│   ├── dto/              # 请求 / 响应结构体
+│   ├── logic/            # 业务逻辑编排
+│   ├── middleware/       # Gin 中间件（CORS、Recovery、Trace）
+│   ├── model/            # 数据模型与 GORM 操作
+│   └── router/           # 路由注册
+├── pkg/telegram/         # Telegram 引擎封装（登录、下载、存储）
+├── utils/                # 工具函数
+├── web/                  # 前端源码 + 嵌入产物
+├── Dockerfile            # 多阶段构建
+├── docker-compose.yml    # Docker Compose 编排
+└── Makefile              # 构建/运行快捷命令
+```
+
+## 🛡️ 注意事项
+
+- 首次启动需要配置代理（如果网络无法直连 Telegram）
+- session 持久化在 `data_dir`（BoltDB），重启后无需重新登录
+- 复用 Telegram Desktop 凭证属于伪装客户端，高频使用有封号风险，建议替换为自己的 API 凭证
+- 下载的文件保存在 `download.dir` 配置的目录中
+
+## ❓ FAQ
+
+<details>
+<summary><b>登录后重启服务还要重新扫码吗？</b></summary>
+
+不用。Telegram session 持久化在 `data_dir`（BoltDB），只要挂载了 `/data` 卷，重启后自动恢复登录态。
+
+</details>
+
+<details>
+<summary><b>网络连不上 Telegram 怎么办？</b></summary>
+
+配置 `TG_PROXY` 环境变量，支持 http / https / socks5 代理，例如 `http://127.0.0.1:7890` 或 `socks5://127.0.0.1:1080`。
+
+</details>
+
+<details>
+<summary><b>下载的文件在哪？</b></summary>
+
+在 `download.dir` 配置的目录（Docker 默认 `/downloads`），挂载到宿主机即可直接访问。
+
+</details>
+
+<details>
+<summary><b>支持下载哪些类型的内容？</b></summary>
+
+支持 `t.me` 消息链接里的视频、图片、文件，复用 tdl 的多线程下载引擎。
+
+</details>
+
+## 🗺️ Roadmap
+
+- ✅ 二维码登录 + 2FA
+- ✅ 多线程下载 + 任务管理 + 在线预览
+- ✅ Docker 部署 + 代理支持
+- 🔲 文件夹 / 频道批量下载
+- 🔲 下载速度限制
+- 🔲 更多文件格式预览
+
+## 💌 致谢
+
+本项目站在巨人的肩膀上，特别感谢以下开源项目及其作者：
+
+- **[tdl](https://github.com/iyear/tdl)** — by [@iyear](https://github.com/iyear)，Telegram 下载利器。tdl-filegram 复用了 tdl 的核心模块（`core/downloader` 多线程下载引擎、`core/tmedia` 媒体解析、`core/tclient` 客户端封装、`core/storage` 会话存储、`core/dcpool` 连接池），没有 tdl 的工作就没有本项目。
+- **[gotd/td](https://github.com/gotd/td)** — 完整的 Telegram MTProto API Go 实现，本项目底层的全部 Telegram 通信能力均基于此。
+
+## ⭐ Star history
+
+[![Stargazers over time](https://api.star-history.com/svg?repos=weilaifeng/tdl-filegram&type=Date)](https://star-history.com/#weilaifeng/tdl-filegram&Date)
+
+## 📜 协议
+
+[MIT](./LICENSE) —— 拿去随便用。
+
+---
+
+<div align="center">
+
+**用过觉得有用？给个 ⭐ 是对作者最大的鼓励。**
+
+[⬆ 回到顶部](#tdl-filegram) · [📥 快速开始](#-快速开始) · [💬 提 Issue](https://github.com/weilaifeng/tdl-filegram/issues)
+
+</div>

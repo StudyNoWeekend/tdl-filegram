@@ -1,0 +1,9 @@
+.git
+.idea
+web/node_modules
+data
+logs
+downloads
+.tdl
+tdl-filegram
+*.md
