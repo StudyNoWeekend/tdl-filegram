@@ -61,7 +61,42 @@ Under the hood it reuses tdl's core modules (`core/downloader` multi-threaded en
 
 ## ⚡ Quick Start
 
-### Option 1: Docker Run (Recommended)
+### Option 1: Pull the Image (Recommended)
+
+Images are published to GitHub Container Registry. Pick the tag matching your CPU architecture — no local build needed:
+
+```bash
+# ARM64 (Apple Silicon / Raspberry Pi, etc.)
+docker pull ghcr.io/studynoweekend/tdl-filegram:1.0-arm64
+
+# AMD64 (Intel / AMD)
+docker pull ghcr.io/studynoweekend/tdl-filegram:1.0-amd64
+```
+
+Start the container (amd64 shown below; for arm64 swap the tag to `1.0-arm64`):
+
+```bash
+docker run -d --name tdl-filegram \
+  --restart unless-stopped \
+  -p 8744:8744 \
+  -p 8743:8743 \
+  -v ./data:/data \
+  -v ./downloads:/downloads \
+  -e DB_PATH=/data/tdl-filegram.db \
+  -e DOWNLOAD_DIR=/downloads \
+  -e DOWNLOAD_THREADS=4 \
+  -e DOWNLOAD_LIMIT=2 \
+  -e TG_APP_ID=your_app_id \
+  -e TG_APP_HASH=your_app_hash \
+  -e TG_DATA_DIR=/data/.tdl \
+  -e TG_NAMESPACE=default \
+  -e TG_POOL_SIZE=8 \
+  -e TG_RECONNECT_TIMEOUT=5m \
+  -e TG_PROXY=http://192.168.1.100:7890 \
+  ghcr.io/studynoweekend/tdl-filegram:1.0-amd64
+```
+
+### Option 2: Build the Image Locally
 
 ```bash
 # Build the image
@@ -88,7 +123,7 @@ docker run -d --name tdl-filegram \
   tdl-filegram
 ```
 
-### Option 2: Local Development
+### Option 3: Local Development
 
 **Prerequisites:** Go 1.25+, Node.js 18+
 
