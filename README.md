@@ -14,7 +14,7 @@
 [![Vue](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vue.js&logoColor=white)](https://vuejs.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](./Dockerfile)
 
-[💡 项目亮点](#-项目亮点) · [📥 快速开始](#-快速开始) · [🎬 使用流程](#-使用流程) · [🌐 技术栈](#-技术栈) · [📊 API 接口](#-api-接口) · [❓ FAQ](#-faq) · [🗺️ Roadmap](#-roadmap)
+[💡 项目亮点](#-项目亮点) · [📥 快速开始](#-快速开始) · [🎬 使用流程](#-使用流程) · [🌐 技术栈](#-技术栈) · [📊 API 接口](#-api-接口) · [⚠️ 风险告知](#-风险告知与免责声明) · [❓ FAQ](#-faq) · [🗺️ Roadmap](#-roadmap)
 
 🌐 **中文** · [English](./README.en.md)
 
@@ -250,7 +250,7 @@ telegram:
 `app_id` / `app_hash` 是 Telegram MTProto API 的应用凭证，获取方式：
 
 1. **自己申请（推荐）** — 登录 [my.telegram.org](https://my.telegram.org) → "API development tools"，填写应用信息后获取专属凭证。
-2. **使用公开凭证** — 项目默认使用 Telegram Desktop 官方凭证（`app_id: 2040`），兼容性好，但高频使用有风控风险，生产环境建议替换为自己的。
+2. **使用公开凭证** — 你也可使用 Telegram Desktop 的公开凭证（`app_id: 2040`）作为临时方案，但这属于伪装成官方桌面客户端，高频使用有风控风险，生产环境建议替换为自己申请的凭证。
 
 </details>
 
@@ -365,6 +365,26 @@ tdl-filegram/
 - 复用 Telegram Desktop 凭证属于伪装客户端，高频使用有封号风险，建议替换为自己的 API 凭证
 - 下载的文件保存在 `download.dir` 配置的目录中
 
+## ⚠️ 风险告知与免责声明
+
+**使用本项目可能导致你的 Telegram 账号被限制或封禁。一旦使用，即视为你已知晓并自愿承担全部风险，作者不对任何账号损失、数据丢失或其他后果承担责任。**
+
+本项目与 Telegram 的交互并非官方推荐方式，主要体现在以下三点：
+
+1. **非官方 SDK** — Telegram 官方仅提供 TDLib（C++）和 Bot API（HTTP），没有 Go SDK。本项目使用社区第三方库 [gotd/td](https://github.com/gotd/td) 自行实现的 MTProto 协议，而非官方 TDLib。该库作者也在文档中提醒使用者阅读《How To Not Get Banned》指南。
+2. **用户账号登录** — 本项目以用户账号（而非 Bot）登录，目的是下载受保护频道的媒体内容（官方 Bot API 做不到），但也意味着你以"第三方用户客户端"身份活动，更易触发风控。
+3. **应用凭证伪装** — 若复用 Telegram Desktop 的公开凭证（`app_id: 2040`），等同于向服务端伪装成官方桌面客户端，高频使用封号风险显著上升，建议替换为自己申请的凭证。
+
+以上行为均可能触发 Telegram 的风控机制。请在使用前充分了解风险。
+
+### 如何减小封号风险？
+
+- 使用官方客户端会话登录
+- 尽可能使用默认的下载和上传选项，**不要设置过大的 `threads` 和 `size`**
+- 不要同时在多台设备上使用相同的帐户登录
+- 不要同时下载或上传太多文件
+- 成为 Telegram 大会员 😅
+
 ## ❓ FAQ
 
 <details>
@@ -417,7 +437,7 @@ tdl-filegram/
 
 ## 📜 协议
 
-[MIT](./LICENSE) —— 拿去随便用。
+[AGPL-3.0](./LICENSE) —— 本项目复用了 [tdl](https://github.com/iyear/tdl)（AGPL-3.0）的核心模块，按其许可证要求，本项目同样采用 AGPL-3.0 开源。任何基于本项目的衍生作品须以相同协议开源。
 
 ---
 

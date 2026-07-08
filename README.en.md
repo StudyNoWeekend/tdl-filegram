@@ -14,7 +14,7 @@ Built on top of the tdl core download engine, with a Web UI crafted in Vue 3 + A
 [![Vue](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vue.js&logoColor=white)](https://vuejs.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](./Dockerfile)
 
-[💡 Highlights](#-highlights) · [📥 Quick Start](#-quick-start) · [🎬 Usage](#-usage) · [🌐 Tech Stack](#-tech-stack) · [📊 API](#-api) · [❓ FAQ](#-faq) · [🗺️ Roadmap](#-roadmap)
+[💡 Highlights](#-highlights) · [📥 Quick Start](#-quick-start) · [🎬 Usage](#-usage) · [🌐 Tech Stack](#-tech-stack) · [📊 API](#-api) · [⚠️ Risk Notice](#-risk-notice--disclaimer) · [❓ FAQ](#-faq) · [🗺️ Roadmap](#-roadmap)
 
 [中文](./README.md) · 🌐 **English**
 
@@ -250,7 +250,7 @@ All config items can be overridden via environment variables:
 `app_id` / `app_hash` are the Telegram MTProto API application credentials:
 
 1. **Apply yourself (recommended)** — Log in to [my.telegram.org](https://my.telegram.org) → "API development tools", fill in app info to get your own credentials.
-2. **Use public credentials** — The project defaults to the official Telegram Desktop credentials (`app_id: 2040`), which are compatible but carry a risk of rate-limiting under heavy use. Replace with your own for production.
+2. **Use public credentials** — You may also use the public Telegram Desktop credentials (`app_id: 2040`) as a temporary solution, but this is equivalent to impersonating the official desktop client. Heavy use carries a risk-control risk; replace with your own for production.
 
 </details>
 
@@ -365,6 +365,26 @@ tdl-filegram/
 - Reusing Telegram Desktop credentials means impersonating a client; heavy use carries a ban risk. Replace with your own API credentials for production
 - Downloaded files are saved in the directory configured by `download.dir`
 
+## ⚠️ Risk Notice & Disclaimer
+
+**Using this project may cause your Telegram account to be restricted or banned. By using it, you acknowledge and voluntarily assume all risks. The author is not responsible for any account loss, data loss, or other consequences.**
+
+This project does not interact with Telegram in the officially recommended way. The main points:
+
+1. **Unofficial SDK** — Telegram officially provides only TDLib (C++) and Bot API (HTTP), with no Go SDK. This project uses [gotd/td](https://github.com/gotd/td), a community third-party implementation of the MTProto protocol, rather than the official TDLib. The library's own author reminds users to read the "How To Not Get Banned" guide.
+2. **User account login** — This project logs in as a user account (not a Bot) so it can download media from protected channels — something the official Bot API cannot do. This also means you act as a "third-party user client", which is more likely to trigger risk control.
+3. **Credential impersonation** — Reusing the public Telegram Desktop credentials (`app_id: 2040`) is equivalent to impersonating the official desktop client to the server. Heavy use significantly raises the ban risk; replace with your own credentials.
+
+All of the above may trigger Telegram's risk control mechanisms. Please fully understand the risks before use.
+
+### How to reduce the risk of being banned?
+
+- Log in using an official client session
+- Stick to the default download and upload options as much as possible — **do not set overly large `threads` and `size`**
+- Do not log in with the same account on multiple devices at the same time
+- Do not download or upload too many files simultaneously
+- Become a Telegram Premium member 😅
+
 ## ❓ FAQ
 
 <details>
@@ -417,7 +437,7 @@ This project stands on the shoulders of giants. Special thanks to:
 
 ## 📜 License
 
-[MIT](./LICENSE) — Use it freely.
+[AGPL-3.0](./LICENSE) — This project reuses the core modules of [tdl](https://github.com/iyear/tdl) (AGPL-3.0). As required by its license, this project is also released under AGPL-3.0. Any derivative work based on this project must be open-sourced under the same license.
 
 ---
 
