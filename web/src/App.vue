@@ -41,10 +41,11 @@ function isLoading(action, id) {
   return loadingAction.value === action + ':' + id
 }
 
-// 轮询定时器
-let loginTimer = null
-let jobTimer = null
-const qrCanvas = ref(null)
+	// 轮询定时器
+	let loginTimer = null
+	let jobTimer = null
+	let readyCheckTimer = null
+	const qrCanvas = ref(null)
 
 onMounted(() => {
   checkStatus()
@@ -53,6 +54,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopLoginPoll()
   stopJobPoll()
+  stopReadyCheck()
 })
 
 watch(qrUrl, (val) => {
@@ -64,8 +66,10 @@ watch(authenticated, (val) => {
     stopLoginPoll()
     loadJobs()
     startJobPoll()
+    startReadyCheck()
   } else {
     stopJobPoll()
+    stopReadyCheck()
   }
 })
 
@@ -84,7 +88,7 @@ function applyStatus(s) {
   loginStatus.value = s.login_status
   qrUrl.value = s.qr_url || ''
   loginError.value = s.error || ''
-  if (!authenticated.value && loginStatus.value === 'pending') {
+  if (!authenticated.value && (!ready.value || loginStatus.value === 'pending')) {
     startLoginPoll()
   }
 }
@@ -200,6 +204,27 @@ function startJobPoll() {
 function stopJobPoll() {
   if (jobTimer) clearInterval(jobTimer)
   jobTimer = null
+}
+
+// 已登录状态下定期检查引擎连接状态，连接断开时触发懒重连
+function startReadyCheck() {
+  if (readyCheckTimer) return
+  readyCheckTimer = setInterval(async () => {
+    try {
+      const s = await http.get('/api/login/status')
+      ready.value = s.ready
+      if (!s.ready) {
+        console.log('引擎未就绪，等待重连...')
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }, 10000) // 每 10 秒检查一次，比 1.5s 登录轮询轻量
+}
+
+function stopReadyCheck() {
+  if (readyCheckTimer) clearInterval(readyCheckTimer)
+  readyCheckTimer = null
 }
 
 function progressStatus(job) {
@@ -336,7 +361,7 @@ function formatEta(seconds) {
       </div>
       <a-alert
         v-if="!ready"
-        message="Telegram 未就绪，请检查网络或在 config.yaml 配置代理（telegram.proxy）"
+        message="Telegram 未就绪，正在尝试重连..."
         type="warning"
         show-icon
         class="mt-16"
@@ -379,6 +404,13 @@ function formatEta(seconds) {
     </div>
 
     <a-card title="新建下载" class="mt-16">
+      <a-alert
+        v-if="!ready"
+        message="Telegram 连接已断开，正在尝试重连..."
+        type="warning"
+        show-icon
+        style="margin-bottom: 16px"
+      />
       <a-input-group compact>
         <a-input
           v-model:value="url"

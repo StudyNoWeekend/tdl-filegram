@@ -6,10 +6,10 @@
 
 Built on top of the tdl core download engine, with a Web UI crafted in Vue 3 + Ant Design Vue. No more command line — QR login, paste a link, real-time progress, and in-browser preview, all done in your browser. The frontend is embedded into a single binary via `go:embed` — **zero external dependencies to deploy**.
 
-[![Stars](https://img.shields.io/github/stars/weilaifeng/tdl-filegram?style=flat-square&logo=github&color=yellow)](https://github.com/weilaifeng/tdl-filegram/stargazers)
-[![Forks](https://img.shields.io/github/forks/weilaifeng/tdl-filegram?style=flat-square&logo=github&color=blue)](https://github.com/weilaifeng/tdl-filegram/network/members)
-[![Issues](https://img.shields.io/github/issues/weilaifeng/tdl-filegram?style=flat-square&logo=github)](https://github.com/weilaifeng/tdl-filegram/issues)
-[![License](https://img.shields.io/github/license/weilaifeng/tdl-filegram?style=flat-square&color=green)](./LICENSE)
+[![Stars](https://img.shields.io/github/stars/StudyNoWeekend/tdl-filegram?style=flat-square&logo=github&color=yellow)](https://github.com/StudyNoWeekend/tdl-filegram/stargazers)
+[![Forks](https://img.shields.io/github/forks/StudyNoWeekend/tdl-filegram?style=flat-square&logo=github&color=blue)](https://github.com/StudyNoWeekend/tdl-filegram/network/members)
+[![Issues](https://img.shields.io/github/issues/StudyNoWeekend/tdl-filegram?style=flat-square&logo=github)](https://github.com/StudyNoWeekend/tdl-filegram/issues)
+[![License](https://img.shields.io/github/license/StudyNoWeekend/tdl-filegram?style=flat-square&color=green)](./LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
 [![Vue](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vue.js&logoColor=white)](https://vuejs.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](./Dockerfile)
@@ -67,13 +67,13 @@ Images are published to GitHub Container Registry. Pick the tag matching your CP
 
 ```bash
 # ARM64 (Apple Silicon / Raspberry Pi, etc.)
-docker pull ghcr.io/studynoweekend/tdl-filegram:1.0-arm64
+docker pull ghcr.io/studynoweekend/tdl-filegram:1.1-arm64
 
 # AMD64 (Intel / AMD)
-docker pull ghcr.io/studynoweekend/tdl-filegram:1.0-amd64
+docker pull ghcr.io/studynoweekend/tdl-filegram:1.1-amd64
 ```
 
-Start the container (amd64 shown below; for arm64 swap the tag to `1.0-arm64`):
+Start the container (amd64 shown below; for arm64 swap the tag to `1.1-arm64`):
 
 ```bash
 docker run -d --name tdl-filegram \
@@ -93,7 +93,7 @@ docker run -d --name tdl-filegram \
   -e TG_POOL_SIZE=8 \
   -e TG_RECONNECT_TIMEOUT=5m \
   -e TG_PROXY=http://192.168.1.100:7890 \
-  ghcr.io/studynoweekend/tdl-filegram:1.0-amd64
+	  ghcr.io/studynoweekend/tdl-filegram:1.1-amd64
 ```
 
 ### Option 2: Build the Image Locally
@@ -433,7 +433,7 @@ This project stands on the shoulders of giants. Special thanks to:
 
 ## ⭐ Star history
 
-[![Stargazers over time](https://api.star-history.com/svg?repos=weilaifeng/tdl-filegram&type=Date)](https://star-history.com/#weilaifeng/tdl-filegram&Date)
+[![Stargazers over time](https://api.star-history.com/svg?repos=StudyNoWeekend/tdl-filegram&type=Date)](https://star-history.com/#StudyNoWeekend/tdl-filegram&Date)
 
 ## 📜 License
 
@@ -445,6 +445,6 @@ This project stands on the shoulders of giants. Special thanks to:
 
 **Found it useful? A ⭐ means a lot to the author.**
 
-[⬆ Back to top](#tdl-filegram) · [📥 Quick Start](#-quick-start) · [💬 Open an Issue](https://github.com/weilaifeng/tdl-filegram/issues)
+[⬆ Back to top](#tdl-filegram) · [📥 Quick Start](#-quick-start) · [💬 Open an Issue](https://github.com/StudyNoWeekend/tdl-filegram/issues)
 
 </div>

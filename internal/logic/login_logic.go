@@ -19,6 +19,10 @@ func NewLoginLogic(engine *telegram.Engine) *LoginLogic {
 // Status 返回登录状态
 func (l *LoginLogic) Status(ctx context.Context) *res.LoginStatusRes {
 	ready := l.engine.IsReady()
+	if !ready {
+		// 连接已断开，触发懒重连（用户访问页面时才重连，避免频繁重连触发风控）
+		l.engine.Reconnect()
+	}
 	authed := ready && l.engine.IsAuthenticated(ctx)
 	snap := l.engine.LoginStatus()
 	if authed && snap.Status != telegram.LoginStatusSuccess {

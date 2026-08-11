@@ -115,11 +115,16 @@ func loadResume(path string, parts int) *resumeState {
 
 // resolveMedia 解析 t.me 链接对应的可下载媒体，用于 file_reference 过期后的刷新
 func (e *Engine) resolveMedia(ctx context.Context, url string) (*tmedia.Media, error) {
-	peer, msgID, err := tutil.ParseMessageLink(ctx, e.manager, url)
+	pool := e.getPool()
+	manager := e.getManager()
+	if pool == nil || manager == nil {
+		return nil, errors.New("telegram engine not ready")
+	}
+	peer, msgID, err := tutil.ParseMessageLink(ctx, manager, url)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse message link")
 	}
-	msg, err := tutil.GetSingleMessage(ctx, e.pool.Default(ctx), peer.InputPeer(), msgID)
+	msg, err := tutil.GetSingleMessage(ctx, pool.Default(ctx), peer.InputPeer(), msgID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get message")
 	}
@@ -139,11 +144,16 @@ type MediaInfo struct {
 
 // ResolveMedia 解析消息链接对应的媒体信息（用于下载前预览文件名和大小）
 func (e *Engine) ResolveMedia(ctx context.Context, url string) (*MediaInfo, error) {
-	peer, msgID, err := tutil.ParseMessageLink(ctx, e.manager, url)
+	pool := e.getPool()
+	manager := e.getManager()
+	if pool == nil || manager == nil {
+		return nil, errors.New("telegram engine not ready")
+	}
+	peer, msgID, err := tutil.ParseMessageLink(ctx, manager, url)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse message link")
 	}
-	msg, err := tutil.GetSingleMessage(ctx, e.pool.Default(ctx), peer.InputPeer(), msgID)
+	msg, err := tutil.GetSingleMessage(ctx, pool.Default(ctx), peer.InputPeer(), msgID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get message")
 	}
@@ -162,12 +172,17 @@ func (e *Engine) ResolveMedia(ctx context.Context, url string) (*MediaInfo, erro
 // filename 非空时使用用户指定的文件名，否则使用媒体原始文件名。
 // 支持断点续传：已下载的分片不会重复下载，通过 .resume 元数据文件跟踪进度。
 func (e *Engine) DownloadMedia(ctx context.Context, url, dir, filename string, rep ProgressReporter) error {
+	pool := e.getPool()
+	manager := e.getManager()
+	if pool == nil || manager == nil {
+		return errors.New("telegram engine not ready")
+	}
 	// 初始解析媒体（保留 msg 用于 mime 与兜底文件名）
-	peer, msgID, err := tutil.ParseMessageLink(ctx, e.manager, url)
+	peer, msgID, err := tutil.ParseMessageLink(ctx, manager, url)
 	if err != nil {
 		return errors.Wrap(err, "parse message link")
 	}
-	msg, err := tutil.GetSingleMessage(ctx, e.pool.Default(ctx), peer.InputPeer(), msgID)
+	msg, err := tutil.GetSingleMessage(ctx, pool.Default(ctx), peer.InputPeer(), msgID)
 	if err != nil {
 		return errors.Wrap(err, "get message")
 	}
@@ -221,7 +236,7 @@ func (e *Engine) DownloadMedia(ctx context.Context, url, dir, filename string, r
 	downloaded.Store(initialDownloaded)
 
 	// 进入并行下载循环前一次性获取 client，file_reference 刷新时按需更新
-	client := e.pool.Client(ctx, media.DC)
+	client := pool.Client(ctx, media.DC)
 
 	for {
 		g, gctx := errgroup.WithContext(ctx)
@@ -280,7 +295,7 @@ func (e *Engine) DownloadMedia(ctx context.Context, url, dir, filename string, r
 			// DC 可能变化，需要重新获取 client
 			if media.DC != newMedia.DC {
 				media.DC = newMedia.DC
-				client = e.pool.Client(ctx, media.DC)
+				client = pool.Client(ctx, media.DC)
 			}
 			continue
 		}

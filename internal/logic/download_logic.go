@@ -58,6 +58,8 @@ func NewDownloadLogic(jobModel *model.JobModel, engine *telegram.Engine, downloa
 // Create 创建下载任务并异步执行
 func (l *DownloadLogic) Create(ctx context.Context, r req.CreateDownloadReq) (*res.CreateDownloadRes, error) {
 	if !l.engine.IsReady() {
+		// 触发懒重连，与 LoginLogic.Status() 行为一致
+		l.engine.Reconnect()
 		return nil, enum.ErrTelegramNotReady
 	}
 	// 确定文件名：用户指定则使用用户输入，否则解析媒体获取默认名
@@ -93,6 +95,8 @@ func (l *DownloadLogic) Create(ctx context.Context, r req.CreateDownloadReq) (*r
 // Preview 解析消息链接，返回媒体文件名和大小（用于下载前预览）
 func (l *DownloadLogic) Preview(ctx context.Context, r req.PreviewDownloadReq) (*res.PreviewDownloadRes, error) {
 	if !l.engine.IsReady() {
+		// 触发懒重连，与 LoginLogic.Status() 行为一致
+		l.engine.Reconnect()
 		return nil, enum.ErrTelegramNotReady
 	}
 	info, err := l.engine.ResolveMedia(ctx, r.URL)
@@ -119,7 +123,18 @@ func (l *DownloadLogic) process(job *model.Job) {
 		close(done)
 	}()
 
+	// 引擎未就绪时触发重连，短等待后重试（重连是异步的，等几秒让 client.Run 完成）
 	runCtx := l.engine.RunCtx()
+	if runCtx == nil {
+		l.engine.Reconnect()
+		for i := 0; i < 30; i++ { // 最多等 30 秒
+			time.Sleep(1 * time.Second)
+			runCtx = l.engine.RunCtx()
+			if runCtx != nil {
+				break
+			}
+		}
+	}
 	if runCtx == nil {
 		l.failJob(job, "telegram engine not ready")
 		return

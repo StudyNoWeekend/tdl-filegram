@@ -39,9 +39,11 @@ type Engine struct {
 	storage storage.Storage
 	client  *telegram.Client
 
-	runCtx  context.Context
-	pool    dcpool.Pool
-	manager *peers.Manager
+	readyMu     sync.RWMutex
+	runCtx      context.Context
+	pool        dcpool.Pool
+	manager     *peers.Manager
+	reconnectCh chan struct{}
 
 	loginMu    sync.Mutex
 	loginState *loginState
@@ -68,32 +70,90 @@ func NewEngine(cfg Config, log *zap.Logger) (*Engine, error) {
 		return nil, errors.Wrap(err, "create telegram client")
 	}
 	return &Engine{
-		cfg:      cfg,
-		log:      log,
-		storage:  st,
-		client:   client,
-		dispatch: dispatch,
+		cfg:         cfg,
+		log:         log,
+		storage:     st,
+		client:      client,
+		dispatch:    dispatch,
+		reconnectCh: make(chan struct{}, 1),
 	}, nil
 }
 
-// Run 启动 telegram client，client 就绪后执行 serve（通常启动 HTTP 服务）
+// Run 启动 telegram client，连接断开后等待手动触发重连（懒重连）。
+// client 就绪后执行 serve（通常保持运行），连接断开时重置状态并等待 Reconnect() 调用。
 func (e *Engine) Run(ctx context.Context, serve func(ctx context.Context) error) error {
-	return e.client.Run(ctx, func(ctx context.Context) error {
-		e.runCtx = ctx
-		e.pool = dcpool.NewPool(e.client, int64(e.cfg.PoolSize),
-			tclient.NewDefaultMiddlewares(ctx, e.cfg.ReconnectTimeout)...)
-		e.manager = peers.Options{Storage: storage.NewPeers(e.storage)}.
-			Build(e.pool.Default(ctx))
-		e.log.Info("telegram engine ready")
-		return serve(ctx)
-	})
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		err := e.client.Run(ctx, func(runCtx context.Context) error {
+			pool := dcpool.NewPool(e.client, int64(e.cfg.PoolSize),
+				tclient.NewDefaultMiddlewares(runCtx, e.cfg.ReconnectTimeout)...)
+			manager := peers.Options{Storage: storage.NewPeers(e.storage)}.
+				Build(pool.Default(runCtx))
+			e.readyMu.Lock()
+			e.runCtx = runCtx
+			e.pool = pool
+			e.manager = manager
+			e.readyMu.Unlock()
+			e.log.Info("telegram engine ready")
+			return serve(runCtx)
+		})
+		// 连接断开，重置状态使 IsReady 返回 false
+		e.readyMu.Lock()
+		e.runCtx = nil
+		e.pool = nil
+		e.manager = nil
+		e.readyMu.Unlock()
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		e.log.Warn("telegram engine disconnected, waiting for reconnect", zap.Error(err))
+		select {
+		case <-e.reconnectCh:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+// Reconnect 触发重连（非阻塞，多次调用安全）。
+// 仅在连接已断开时生效，连接正常时调用无副作用。
+func (e *Engine) Reconnect() {
+	select {
+	case e.reconnectCh <- struct{}{}:
+	default:
+	}
 }
 
 // RunCtx 返回 client.Run 的上下文，供 logic 层发起 telegram API 调用
-func (e *Engine) RunCtx() context.Context { return e.runCtx }
+func (e *Engine) RunCtx() context.Context {
+	e.readyMu.RLock()
+	defer e.readyMu.RUnlock()
+	return e.runCtx
+}
 
 // IsReady 表示 telegram client 是否已连接就绪
-func (e *Engine) IsReady() bool { return e.runCtx != nil }
+func (e *Engine) IsReady() bool {
+	e.readyMu.RLock()
+	ctx := e.runCtx
+	e.readyMu.RUnlock()
+	return ctx != nil && ctx.Err() == nil
+}
+
+// getPool 返回当前连接池（线程安全）
+func (e *Engine) getPool() dcpool.Pool {
+	e.readyMu.RLock()
+	defer e.readyMu.RUnlock()
+	return e.pool
+}
+
+// getManager 返回当前 peers 管理器（线程安全）
+func (e *Engine) getManager() *peers.Manager {
+	e.readyMu.RLock()
+	defer e.readyMu.RUnlock()
+	return e.manager
+}
 
 // Close 关闭底层存储
 func (e *Engine) Close() error {
