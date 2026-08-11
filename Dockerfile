@@ -1,6 +1,8 @@
 # ===== 阶段 1：构建前端 =====
 FROM node:20-alpine AS web-builder
 WORKDIR /app/web
+# 使用国内 npm 镜像源加速
+RUN npm config set registry https://registry.npmmirror.com
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ .
@@ -8,6 +10,8 @@ RUN npm run build
 
 # ===== 阶段 2：构建后端 =====
 FROM golang:1.25-alpine AS go-builder
+# 使用国内 Go 模块代理加速
+ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
