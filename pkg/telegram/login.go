@@ -65,9 +65,13 @@ func (s *loginState) setErr(err error) {
 
 // IsAuthenticated 检查当前是否已登录
 func (e *Engine) IsAuthenticated(ctx context.Context) bool {
+	client := e.getClient()
+	if client == nil {
+		return false
+	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	status, err := e.client.Auth().Status(ctx)
+	status, err := client.Auth().Status(ctx)
 	if err != nil {
 		return false
 	}
@@ -125,7 +129,8 @@ func (e *Engine) Submit2FA(password string) error {
 // doQRLogin 执行二维码登录，token 刷新时更新状态，必要时等待 2FA
 func (e *Engine) doQRLogin(st *loginState) {
 	runCtx := e.RunCtx()
-	_, err := e.client.QR().Auth(runCtx, qrlogin.OnLoginToken(e.dispatch),
+	client := e.getClient()
+	_, err := client.QR().Auth(runCtx, qrlogin.OnLoginToken(e.dispatch),
 		func(ctx context.Context, token qrlogin.Token) error {
 			st.setQR(token.URL())
 			st.setStatus(LoginStatusPending)
@@ -137,7 +142,7 @@ func (e *Engine) doQRLogin(st *loginState) {
 			st.setStatus(LoginStatusNeed2FA)
 			select {
 			case pwd := <-st.twoFACh:
-				if _, err := e.client.Auth().Password(runCtx, pwd); err != nil {
+				if _, err := client.Auth().Password(runCtx, pwd); err != nil {
 					st.setErr(err)
 					e.log.Error("2FA auth failed", zap.Error(err))
 					return

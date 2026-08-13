@@ -1,5 +1,9 @@
+# REGISTRY 可通过 --build-arg 覆盖，默认使用华为云镜像加速
+# arm64 构建时使用 --build-arg REGISTRY=docker.io/library 以获取多架构镜像
+ARG REGISTRY=swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library
+
 # ===== 阶段 1：构建前端 =====
-FROM node:20-alpine AS web-builder
+FROM ${REGISTRY}/node:20-alpine AS web-builder
 WORKDIR /app/web
 # 使用国内 npm 镜像源加速
 RUN npm config set registry https://registry.npmmirror.com
@@ -9,7 +13,7 @@ COPY web/ .
 RUN npm run build
 
 # ===== 阶段 2：构建后端 =====
-FROM golang:1.25-alpine AS go-builder
+FROM ${REGISTRY}/golang:1.25-alpine AS go-builder
 # 使用国内 Go 模块代理加速
 ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /app
@@ -21,7 +25,7 @@ COPY --from=web-builder /app/web/dist ./web/dist
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o tdl-filegram ./cmd/api/
 
 # ===== 阶段 3：运行镜像（nginx 前端 :8744 + Go 后端 :8743）=====
-FROM alpine:3.20
+FROM ${REGISTRY}/alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata nginx
 ENV TZ=Asia/Shanghai
 
