@@ -9,4 +9,5 @@
 /logs/
 /downloads/
 /.tdl/
+.zcode/
 /config/config.yaml
